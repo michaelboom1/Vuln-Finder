@@ -21,23 +21,28 @@ A lightweight, fast, and dependency-free Command Line Interface (CLI) security s
 1. Clone the repository:
    ```bash
    git clone [https://github.com/YOUR_USERNAME/Vuln-Finder.git](https://github.com/YOUR_USERNAME/Vuln-Finder.git)
-   cd Vuln-Finder ```
+   cd Vuln-Finder
 
 2. Install the required terminal coloring library:
-    pip3 install colorama
+   ```bash
+   pip3 install colorama
 
 ## How to use?
 
 1. Basic Folder or File Scan
-    python3 main.py /path/to/your/project
+   ```bash
+   python3 main.py /path/to/your/project
 
 2. Scan and Generate a JSON Report
-    python3 main.py /path/to/your/project --json reports/scan_1.json
+   ```bash
+   python3 main.py /path/to/your/project --json reports/scan_1.json
 
 3. Exclude Custom Directories
-    python3 main.py /path/to/your/project --exclude testreport_folder test_code
+   ```bash
+   python3 main.py /path/to/your/project --exclude testreport_folder test_code
 
 4. Display Help Menu
+   ```bash
     python3 main.py --help
 
 
