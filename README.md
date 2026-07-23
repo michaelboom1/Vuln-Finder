@@ -20,7 +20,7 @@ A lightweight, fast, and dependency-free Command Line Interface (CLI) security s
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/Vuln-Finder.git](https://github.com/YOUR_USERNAME/Vuln-Finder.git)
+   git clone [https://github.com/michaelboom1/Vuln-Finder.git](https://github.com/michaelboom1/Vuln-Finder.git)
    cd Vuln-Finder
 
 2. Install the required terminal coloring library:
