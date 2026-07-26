@@ -3,12 +3,12 @@ import re
 import json
 import math
 import argparse
+import fnmatch
 from collections import Counter
 from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-# Расширенная база регулярных выражений
 PATTERNS = {
     "Telegram Bot Token": r"\d{9,10}:[A-Za-z0-9_-]{35}",
     "Generic API Key / Secret": r"['\"]?(?:key|secret|password|token)['\"]?\s*[:=]\s*['\"](.*?)['\"]",
@@ -27,8 +27,42 @@ DEFAULT_IGNORE_DIRS = {
     'env', 'bin', 'obj', '.idea', '.vscode'
 }
 
+def load_vulnignore(target_path):
+    ignore_patterns = set()
+    base_dir = target_path if os.path.isdir(target_path) else os.path.dirname(os.path.abspath(target_path))
+    ignore_file_path = os.path.join(base_dir, ".vulnignore")
+    
+    if os.path.exists(ignore_file_path):
+        try:
+            with open(ignore_file_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    clean_line = line.strip()
+                    if clean_line and not clean_line.startswith("#"):
+                        ignore_patterns.add(clean_line)
+            print(f"{Fore.CYAN}[*] Loaded .vulnignore rules ({len(ignore_patterns)} patterns found)")
+        except Exception as e:
+            print(f"{Fore.YELLOW}[!] Warning: Could not read .vulnignore: {e}")
+            
+    return ignore_patterns
+
+def is_ignored(file_path, ignore_patterns):
+    norm_path = os.path.normpath(file_path)
+    file_name = os.path.basename(file_path)
+
+    for pattern in ignore_patterns:
+        clean_pattern = pattern.rstrip("/\\")
+        
+        if fnmatch.fnmatch(file_name, pattern):
+            return True
+        if fnmatch.fnmatch(norm_path, pattern) or fnmatch.fnmatch(norm_path, f"*{os.sep}{pattern}"):
+            return True
+        path_parts = norm_path.split(os.sep)
+        if clean_pattern in path_parts:
+            return True
+
+    return False
+
 def calculate_entropy(data: str) -> float:
-    """Вычисляет энтропию Шеннона для строки (степень случайности символов)."""
     if not data:
         return 0.0
     entropy = 0.0
@@ -46,8 +80,7 @@ def scan_file(file_path, report_data, min_entropy=4.5):
         with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
             for line_num, line in enumerate(file, 1):
                 clean_line = line.strip()
-                
-                # 1. Проверка по базе регулярных выражений (Regex)
+
                 for secret_type, regex in PATTERNS.items():
                     match = re.search(regex, line, re.IGNORECASE)
                     
@@ -73,9 +106,7 @@ def scan_file(file_path, report_data, min_entropy=4.5):
                         triggered_lines.add(line_num)
                         found_in_file += 1
 
-                # 2. Проверка высокой энтропии (для неизвестных/кастомных секретов)
                 if line_num not in triggered_lines:
-                    # Разбиваем строку на отдельные слова/токены
                     words = re.findall(r'[A-Za-z0-9_\-\+\/=]{16,}', clean_line)
                     for word in words:
                         entropy = calculate_entropy(word)
@@ -111,6 +142,8 @@ def start_scanning(target_path, custom_exclude=None, json_output=None, min_entro
     if custom_exclude:
         ignore_dirs.update(custom_exclude)
 
+    vulnignore_patterns = load_vulnignore(target_path)
+
     total_secrets = 0
     report_data = []
     
@@ -127,9 +160,13 @@ def start_scanning(target_path, custom_exclude=None, json_output=None, min_entro
                     continue
                     
                 full_path = os.path.join(root, file)
+                if is_ignored(full_path, vulnignore_patterns):
+                    continue
+
                 total_secrets += scan_file(full_path, report_data, min_entropy=min_entropy)
     else:
-        total_secrets += scan_file(target_path, report_data, min_entropy=min_entropy)
+        if not is_ignored(target_path, vulnignore_patterns):
+            total_secrets += scan_file(target_path, report_data, min_entropy=min_entropy)
 
     print(f"{Fore.BLUE}{'='*50}")
     if total_secrets == 0:
@@ -140,6 +177,10 @@ def start_scanning(target_path, custom_exclude=None, json_output=None, min_entro
 
     if json_output and report_data:
         try:
+            out_dir = os.path.dirname(json_output)
+            if out_dir:
+                os.makedirs(out_dir, exist_ok=True)
+
             with open(json_output, "w", encoding="utf-8") as jf:
                 json.dump(report_data, jf, indent=4, ensure_ascii=False)
             print(f"{Fore.GREEN}[+] Structured report successfully saved to: {json_output}")
