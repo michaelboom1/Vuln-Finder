@@ -50,21 +50,26 @@ A lightweight, fast, and dependency-free Command Line Interface (CLI) security s
     python3 main.py --help
 
 5. Adjust Shannon Entropy Sensitivity
-   # Set a custom entropy threshold (default is 4.5)
+
+## Set a custom entropy threshold (default is 4.5)
    ```bash
    python3 main.py . --min-entropy 5.0
+   ```
 
 ## Custom Ignore Rules
 
 You can place a `.vulnignore` file in your target project directory to bypass specific files, directories, or wildcards during the scan:
 
-# Ignore environment and test files
+## Ignore environment and test files
+```txt
 *.env
 tests/
 secrets_mock.py
+```
 
 ## CLI Options
 
+```txt
 positional arguments:
   path                  Path to the file or folder to be scanned
 
@@ -73,6 +78,6 @@ options:
   --exclude EXCLUDE     Additional directories to ignore during the scan
   --json JSON           Save results to a specified JSON file (e.g.,reports/result.json)
   --min-entropy MIN     Minimum Shannon entropy threshold for suspicious token detection (default: 4.5)
-
+```
 
     
